@@ -3,7 +3,8 @@ import axios from 'axios';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 
-const API_URL = 'http://localhost:8000/chat';
+// Use a relative URL for API calls, which will be handled by our nginx proxy
+const API_URL = '/api/chat';
 
 function App() {
   const [messages, setMessages] = useState([]);
