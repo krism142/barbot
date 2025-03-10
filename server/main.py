@@ -71,10 +71,10 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: Dict[str, Any]
 
-# Function to validate if the message is related to cocktails or mixed drinks using Claude 3.5 Haiku
+# Function to validate if the message is related to cocktails or mixed drinks using Claude
 async def is_cocktail_related(message: str) -> Tuple[bool, str]:
     """
-    Use Claude 3.5 Haiku to determine if the message is related to cocktails or mixed drinks.
+    Use Claude to determine if the message is related to cocktails or mixed drinks.
     
     Args:
         message: The user's message
@@ -83,9 +83,9 @@ async def is_cocktail_related(message: str) -> Tuple[bool, str]:
         A tuple of (is_valid, reason)
     """
     try:
-        # Call Claude 3.5 Haiku with a smaller context size for faster response
+        # Call Claude with a validation prompt
         validation_response = client.messages.create(
-            model="claude-3-5-haiku-20240307",
+            model="claude-3-7-sonnet-20250219",
             system=VALIDATION_PROMPT,
             max_tokens=10,  # We only need YES or NO
             messages=[
@@ -120,14 +120,14 @@ async def chat(request: ChatRequest):
         user_messages = [msg for msg in request.messages if msg.role == "user"]
         if user_messages:
             latest_user_message = user_messages[-1].content
-            # Validate if the message is cocktail-related using Claude 3.5 Haiku
+            # Validate if the message is cocktail-related
             is_valid, reason = await is_cocktail_related(latest_user_message)
             
             if not is_valid:
                 # Return a helpful error message
                 return {"response": {"response": reason}}
         
-        # Call Anthropic API with Claude 3.7 Sonnet for the main response
+        # Call Anthropic API for the main response
         response = client.messages.create(
             model="claude-3-7-sonnet-20250219",
             system=SYSTEM_PROMPT,
