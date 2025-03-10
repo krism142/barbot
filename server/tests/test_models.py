@@ -1,8 +1,10 @@
 import pytest
 from pydantic import ValidationError
+from unittest.mock import patch
 
-# Import models from main
-from main import Message, ChatRequest, ChatResponse
+# Import models from main using the same patch technique
+with patch("os.getenv", return_value="fake-api-key"), patch("anthropic.Anthropic"):
+    from main import Message, ChatRequest, ChatResponse
 
 def test_message_model_valid():
     """Test valid message creation"""

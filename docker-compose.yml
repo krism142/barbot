@@ -11,7 +11,7 @@ services:
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./server:/app
       - /app/__pycache__
@@ -26,7 +26,7 @@ services:
     container_name: barbot-web
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8081:80"
     depends_on:
       - server
     networks:

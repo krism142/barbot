@@ -4,8 +4,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 
 # We need to patch anthropic and os.getenv before importing main
-with patch("os.getenv", return_value="fake-api-key"), \
-     patch("anthropic.Anthropic"):
+with patch("os.getenv", return_value="fake-api-key"), patch("anthropic.Anthropic"):
     from main import app, ChatRequest, Message
 
 client = TestClient(app)
@@ -71,8 +70,8 @@ def test_chat_endpoint(mock_response, expected_result):
     # Create a mock for the Anthropic client response
     mock_anthropic_response = MockAnthropicResponse(mock_response)
     
-    # Patch the client.messages.create method
-    with patch("anthropic.Anthropic.return_value.messages.create", return_value=mock_anthropic_response):
+    # Patch the client.messages.create method correctly
+    with patch("main.client.messages.create", return_value=mock_anthropic_response):
         response = client.post("/chat", json=request_data)
         
         # Check response is successful
@@ -90,7 +89,7 @@ def test_chat_endpoint_exception_handling():
     }
     
     # Simulate an exception in the Anthropic API call
-    with patch("anthropic.Anthropic.return_value.messages.create", side_effect=Exception("API error")):
+    with patch("main.client.messages.create", side_effect=Exception("API error")):
         response = client.post("/chat", json=request_data)
         
         # Check response is a 500 error
@@ -108,6 +107,8 @@ def test_invalid_request_format():
     # Empty messages array
     invalid_request = {"messages": []}
     
-    response = client.post("/chat", json=invalid_request)
-    # This should still be processed, but we should check that it doesn't crash
-    assert response.status_code == 200
+    # Here we need to also mock the Anthropic client to avoid a real API call
+    with patch("main.client.messages.create", return_value=MockAnthropicResponse('{"response":"Empty message test"}')):
+        response = client.post("/chat", json=invalid_request)
+        # This should still be processed, but we should check that it doesn't crash
+        assert response.status_code == 200
