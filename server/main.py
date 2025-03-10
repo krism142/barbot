@@ -46,19 +46,19 @@ For all other questions or topics, respond with:
 Do not include any text outside of these JSON objects in your responses.
 """
 
-# Cocktail and drink-related keywords for input validation
-COCKTAIL_KEYWORDS: Set[str] = {
-    "cocktail", "drink", "mixed drink", "mixer", "mixology", "bartend", "bartending", "bar", "liquor",
-    "spirit", "alcohol", "rum", "vodka", "gin", "whiskey", "whisky", "bourbon", "scotch", "tequila",
-    "mezcal", "brandy", "cognac", "wine", "beer", "ale", "lager", "stout", "ipa", "cider",
-    "champagne", "prosecco", "vermouth", "bitters", "amaretto", "aperitif", "digestif",
-    "martini", "manhattan", "mojito", "margarita", "daiquiri", "mimosa", "bellini", "spritz",
-    "negroni", "old fashioned", "mai tai", "pina colada", "bloody mary", "cosmopolitan", "sour",
-    "highball", "lowball", "shot", "shooter", "rocks", "neat", "straight", "up", "on the rocks",
-    "garnish", "mixer", "soda", "tonic", "juice", "lime", "lemon", "orange", "cranberry",
-    "grenadine", "simple syrup", "sugar", "salt", "ice", "shaken", "stirred", "blend", "muddle",
-    "strain", "glass", "cup", "mug", "flute", "tumbler", "coupe", "snifter", "recipe"
-}
+# System prompt for the input validation
+VALIDATION_PROMPT = """
+You are a validation system that determines if user messages are related to cocktails, mixology, bartending, or alcoholic beverages.
+
+Respond with ONLY "YES" or "NO" based on whether the user's input is related to any of these topics:
+- Cocktails, mixed drinks, or drink recipes
+- Alcoholic beverages (spirits, liquors, beer, wine, etc.)
+- Bartending techniques or equipment
+- Ingredients used in cocktails
+- Drinking culture or customs
+
+Do not include ANY explanations or additional text in your response, just "YES" or "NO".
+"""
 
 # Pydantic models
 class Message(BaseModel):
@@ -71,10 +71,10 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: Dict[str, Any]
 
-# Function to validate if the message is related to cocktails or mixed drinks
-def is_cocktail_related(message: str) -> Tuple[bool, str]:
+# Function to validate if the message is related to cocktails or mixed drinks using Claude 3.5 Haiku
+async def is_cocktail_related(message: str) -> Tuple[bool, str]:
     """
-    Check if the message is related to cocktails or mixed drinks.
+    Use Claude 3.5 Haiku to determine if the message is related to cocktails or mixed drinks.
     
     Args:
         message: The user's message
@@ -82,15 +82,29 @@ def is_cocktail_related(message: str) -> Tuple[bool, str]:
     Returns:
         A tuple of (is_valid, reason)
     """
-    # Convert to lowercase for case-insensitive matching
-    message_lower = message.lower()
-    
-    # Check if any cocktail keyword is present in the message
-    for keyword in COCKTAIL_KEYWORDS:
-        if keyword in message_lower:
+    try:
+        # Call Claude 3.5 Haiku with a smaller context size for faster response
+        validation_response = client.messages.create(
+            model="claude-3-5-haiku-20240307",
+            system=VALIDATION_PROMPT,
+            max_tokens=10,  # We only need YES or NO
+            messages=[
+                {"role": "user", "content": message}
+            ]
+        )
+        
+        # Extract the response text
+        response_text = validation_response.content[0].text.strip().upper()
+        
+        # Check if the response is "YES"
+        if response_text == "YES":
             return True, ""
-    
-    return False, "I'm a mixologist specializing in cocktails and drinks. Please ask me questions related to mixology, cocktails, or drink recipes."
+        else:
+            return False, "I'm a mixologist specializing in cocktails and drinks. Please ask me questions related to mixology, cocktails, or drink recipes."
+    except Exception as e:
+        # If validation fails, default to allowing the message to avoid blocking legitimate queries
+        print(f"Validation error: {e}")
+        return True, ""
 
 @app.get("/")
 async def root():
@@ -106,14 +120,14 @@ async def chat(request: ChatRequest):
         user_messages = [msg for msg in request.messages if msg.role == "user"]
         if user_messages:
             latest_user_message = user_messages[-1].content
-            # Validate if the message is cocktail-related
-            is_valid, reason = is_cocktail_related(latest_user_message)
+            # Validate if the message is cocktail-related using Claude 3.5 Haiku
+            is_valid, reason = await is_cocktail_related(latest_user_message)
             
             if not is_valid:
                 # Return a helpful error message
                 return {"response": {"response": reason}}
         
-        # Call Anthropic API
+        # Call Anthropic API with Claude 3.7 Sonnet for the main response
         response = client.messages.create(
             model="claude-3-7-sonnet-20250219",
             system=SYSTEM_PROMPT,
