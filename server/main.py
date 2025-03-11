@@ -1,12 +1,21 @@
 import os
 import json
 import re
+from datetime import timedelta
 from typing import List, Dict, Any, Optional, Tuple, Set
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import anthropic
+
+# Import authentication modules
+from auth import (
+    Token, User, UserCreate, authenticate_user, 
+    create_access_token, get_current_active_user,
+    ACCESS_TOKEN_EXPIRE_MINUTES, add_user
+)
 
 # Load environment variables
 load_dotenv()
@@ -71,6 +80,11 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: Dict[str, Any]
 
+class UserResponse(BaseModel):
+    username: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+
 # Function to validate if the message is related to cocktails or mixed drinks using Claude
 async def is_cocktail_related(message: str) -> Tuple[bool, str]:
     """
@@ -106,12 +120,47 @@ async def is_cocktail_related(message: str) -> Tuple[bool, str]:
         print(f"Validation error: {e}")
         return True, ""
 
+# Authentication routes
+@app.post("/token", response_model=Token)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/register", response_model=UserResponse)
+async def register_user(user_data: UserCreate):
+    success = add_user(user_data)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already exists",
+        )
+    return {
+        "username": user_data.username,
+        "email": user_data.email,
+        "full_name": user_data.full_name
+    }
+
+@app.get("/users/me", response_model=UserResponse)
+async def read_users_me(current_user: User = Depends(get_current_active_user)):
+    return current_user
+
+# API endpoints
 @app.get("/")
 async def root():
     return {"message": "Welcome to the Barbot API! Send POST requests to /chat to interact with the mixologist."}
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, current_user: User = Depends(get_current_active_user)):
     try:
         # Convert messages to the format expected by Anthropic
         formatted_messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
