@@ -3,6 +3,9 @@ from unittest.mock import patch, MagicMock
 import json
 from datetime import timedelta
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
 import sys
 import os
@@ -10,21 +13,55 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '')))
 
 from main import app
 import auth
+from database import User, Base, get_db
+
+# Set up a test database
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base.metadata.create_all(bind=engine)
+
+def override_get_db():
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
 
 class TestAuthentication(unittest.TestCase):
     def setUp(self):
-        # Clear the fake users database and add a test user
-        auth.fake_users_db = {
-            "testuser": {
-                "username": "testuser",
-                "full_name": "Test User",
-                "email": "test@example.com",
-                "hashed_password": auth.get_password_hash("testpassword"),
-                "disabled": False,
-            }
-        }
+        # Create test database and tables
+        Base.metadata.create_all(bind=engine)
+        
+        # Add test user
+        db = TestingSessionLocal()
+        try:
+            # Clean up any existing users
+            db.query(User).delete()
+            db.commit()
+            
+            # Add test user
+            hashed_password = auth.get_password_hash("testpassword")
+            test_user = User(
+                username="testuser",
+                email="test@example.com",
+                full_name="Test User",
+                hashed_password=hashed_password,
+                disabled=False
+            )
+            db.add(test_user)
+            db.commit()
+        finally:
+            db.close()
+    
+    def tearDown(self):
+        # Clean up the test database
+        Base.metadata.drop_all(bind=engine)
     
     def test_get_password_hash(self):
         # Test that hashing a password works
@@ -80,8 +117,14 @@ class TestAuthentication(unittest.TestCase):
         self.assertEqual(result["username"], "newuser")
         self.assertEqual(result["email"], "new@example.com")
         
-        # Verify user was added to fake database
-        self.assertIn("newuser", auth.fake_users_db)
+        # Verify user was added to database
+        db = TestingSessionLocal()
+        try:
+            user = db.query(User).filter(User.username == "newuser").first()
+            self.assertIsNotNone(user)
+            self.assertEqual(user.email, "new@example.com")
+        finally:
+            db.close()
     
     def test_register_duplicate_username(self):
         # Test registration with existing username

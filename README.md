@@ -7,6 +7,7 @@ Barbot is a virtual mixologist chat application that provides cocktail recipes a
 - **Server**: Python backend using FastAPI and the Anthropic API to interact with Claude's AI
 - **Web UI**: React-based frontend that provides a chat interface similar to Claude.ai
 - **Authentication**: JWT-based authentication system to secure the application
+- **Database**: PostgreSQL database for persistent user storage
 
 ## Setup
 
@@ -23,7 +24,7 @@ Barbot is a virtual mixologist chat application that provides cocktail recipes a
    docker-compose up -d
    
 
-3. Access the application at http://localhost
+3. Access the application at http://localhost:8081
 
 ### Option 2: Manual Setup
 
@@ -50,11 +51,22 @@ Barbot is a virtual mixologist chat application that provides cocktail recipes a
    ANTHROPIC_API_KEY=your-api-key-here
    SECRET_KEY=your-secure-random-key-here
    ACCESS_TOKEN_EXPIRE_MINUTES=30
+   DATABASE_URL=postgresql://user:password@localhost:5432/barbot
    
 
 5. Run the server:
    
    uvicorn main:app --reload
+   
+
+#### Database (Manual Setup)
+
+1. Install PostgreSQL on your system
+2. Create a database and user:
+   
+   CREATE DATABASE barbot
+   CREATE USER barbot WITH ENCRYPTED PASSWORD 'barbot_password'
+   GRANT ALL PRIVILEGES ON DATABASE barbot TO barbot
    
 
 #### Web UI
@@ -92,6 +104,14 @@ Barbot uses JWT (JSON Web Token) authentication to secure the API:
 - **Login**: Users can sign in with their credentials to receive a JWT token
 - **Protected Routes**: The chat endpoint is protected and requires authentication
 - **Token Expiration**: Tokens expire after a configurable period (default: 30 minutes)
+- **Persistent Storage**: User credentials are stored in a PostgreSQL database
+
+## Database
+
+- **PostgreSQL**: User data is stored in a PostgreSQL database
+- **ORM**: SQLAlchemy is used for database operations
+- **Persistence**: Data is stored in a Docker volume to survive container restarts
+- **Schema**: User model contains username, email, full name, hashed password, and disabled flag
 
 ## Development with Docker
 
@@ -119,6 +139,14 @@ To view the logs of the running containers:
 docker-compose logs -f
 
 
+### Database administration
+
+To access the PostgreSQL database directly:
+
+
+docker exec -it barbot-db psql -U barbot -d barbot
+
+
 ## Testing
 
 ### Backend Tests
@@ -144,4 +172,6 @@ npm test
 - In production, you should set a strong, random SECRET_KEY
 - Enable HTTPS to protect token transmission
 - Configure proper CORS settings in the FastAPI server
-- Use a proper database instead of the in-memory user storage
+- Set up regular database backups
+- Implement rate limiting for authentication endpoints
+- Consider using environment-specific database credentials

@@ -13,3 +13,8 @@ pytest-mock==3.11.1
 pytest-cov==4.1.0python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
+
+# Database
+sqlalchemy
+psycopg2-binary
+alembic
