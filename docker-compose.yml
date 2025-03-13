@@ -1,6 +1,22 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database
+  db:
+    image: postgres:14
+    container_name: barbot-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=barbot
+      - POSTGRES_PASSWORD=barbot_password
+      - POSTGRES_DB=barbot
+    ports:
+      - "5432:5432"
+    volumes:
+      - barbot-data:/var/lib/postgresql/data
+    networks:
+      - barbot-network
+
   # Backend API service
   server:
     build:
@@ -9,12 +25,17 @@ services:
     container_name: barbot-server
     restart: unless-stopped
     environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_API_KEY={ANTHROPIC_API_KEY}
+      - SECRET_KEY={SECRET_KEY}
+      - ACCESS_TOKEN_EXPIRE_MINUTES={ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      - DATABASE_URL=postgresql://barbot:barbot_password@db:5432/barbot
     ports:
       - "8001:8000"
     volumes:
       - ./server:/app
       - /app/__pycache__
+    depends_on:
+      - db
     networks:
       - barbot-network
 
@@ -31,6 +52,10 @@ services:
       - server
     networks:
       - barbot-network
+
+volumes:
+  barbot-data:
+    driver: local
 
 networks:
   barbot-network:
