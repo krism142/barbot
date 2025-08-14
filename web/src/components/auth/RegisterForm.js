@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { useAuth } from "//context/AuthContext"
+import { useAuth } from "../../context/AuthContext"
 
 const RegisterForm = ({ onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -13,7 +13,7 @@ const RegisterForm = ({ onSuccess }) => {
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prevData => ({
-      .prevData,
+      ...prevData,
       [name]: value
     }))
   }
@@ -25,11 +25,11 @@ const RegisterForm = ({ onSuccess }) => {
       username: formData.username,
       email: formData.email,
       password: formData.password,
-      full_name: formData.fullName  undefined
+      full_name: formData.fullName || undefined
     }
     
     const success = await register(userData)
-    if (success  onSuccess) {
+    if (success && onSuccess) {
       onSuccess()
     }
   }
@@ -39,7 +39,7 @@ const RegisterForm = ({ onSuccess }) => {
       <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Register</h2>
         
-        {error  (
+        {error && (
           <div className="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
             <p>{error}</p>
           </div>

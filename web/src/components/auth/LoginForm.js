@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { useAuth } from "//context/AuthContext"
+import { useAuth } from "../../context/AuthContext"
 
 const LoginForm = ({ onSuccess }) => {
   const [username, setUsername] = useState("")
@@ -9,7 +9,7 @@ const LoginForm = ({ onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     const success = await login(username, password)
-    if (success  onSuccess) {
+    if (success && onSuccess) {
       onSuccess()
     }
   }
@@ -19,7 +19,7 @@ const LoginForm = ({ onSuccess }) => {
       <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Login</h2>
         
-        {error  (
+        {error && (
           <div className="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
             <p>{error}</p>
           </div>
