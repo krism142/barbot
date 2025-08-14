@@ -17,13 +17,13 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        const response = await axios.get("/api/users/me", {
+        const response = await axios.get("http://localhost:8001/users/me", {
           headers: { Authorization: "Bearer " + token }
         })
         setUser(response.data)
       } catch (err) {
         console.error("Authentication error:", err)
-        setError(err.response?.data?.detail  "Failed to authenticate")
+        setError(err.response?.data?.detail || "Failed to authenticate")
         logout()
       } finally {
         setLoading(false)
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
       formData.append("username", username)
       formData.append("password", password)
 
-      const response = await axios.post("/api/token", formData)
+      const response = await axios.post("http://localhost:8001/token", formData)
       const { access_token } = response.data
       
       // Save token and fetch user
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }) => {
       return true
     } catch (err) {
       console.error("Login error:", err)
-      setError(err.response?.data?.detail  "Login failed")
+      setError(err.response?.data?.detail || "Login failed")
       return false
     } finally {
       setLoading(false)
@@ -64,11 +64,11 @@ export const AuthProvider = ({ children }) => {
       setLoading(true)
       setError(null)
       
-      await axios.post("/api/register", userData)
+      await axios.post("http://localhost:8001/register", userData)
       return true
     } catch (err) {
       console.error("Registration error:", err)
-      setError(err.response?.data?.detail  "Registration failed")
+      setError(err.response?.data?.detail || "Registration failed")
       return false
     } finally {
       setLoading(false)
@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    isAuthenticated: !!token  !!user
+    isAuthenticated: !!token && !!user
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
