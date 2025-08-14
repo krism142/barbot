@@ -20,21 +20,21 @@ const AuthPage = ({ onAuthSuccess }) => {
             <div className="flex border-b">
               <button
                 onClick={() => setActiveTab("login")}
-                className={w-1/2 py-3 px-4 font-medium text-center {
+                className={`w-1/2 py-3 px-4 font-medium text-center ${
                   activeTab === "login"
                     ? "bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600"
                     : "text-gray-600 hover:bg-gray-50"
-                }}
+                }`}
               >
                 Sign In
               </button>
               <button
                 onClick={() => setActiveTab("register")}
-                className={w-1/2 py-3 px-4 font-medium text-center {
+                className={`w-1/2 py-3 px-4 font-medium text-center ${
                   activeTab === "register"
                     ? "bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600"
                     : "text-gray-600 hover:bg-gray-50"
-                }}
+                }`}
               >
                 Register
               </button>

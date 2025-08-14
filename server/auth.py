@@ -15,7 +15,9 @@ from database import User, get_db, create_tables
 create_tables()
 
 # Security configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "YOUR_SECRET_KEY_HERE")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable must be set for security")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
