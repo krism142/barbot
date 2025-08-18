@@ -43,6 +43,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    registration_phrase: str
 
 class UserInDB(UserBase):
     hashed_password: str
@@ -127,6 +128,14 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
     return current_user
 
 def add_user(db: Session, user_data: UserCreate):
+    # Check registration phrase
+    required_phrase = os.getenv("REGISTRATION_PHRASE")
+    if required_phrase and user_data.registration_phrase != required_phrase:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid registration phrase"
+        )
+    
     # Check if username or email already exists
     existing_user = db.query(User).filter(User.username == user_data.username).first()
     if existing_user:

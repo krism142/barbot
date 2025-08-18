@@ -6,7 +6,8 @@ const RegisterForm = ({ onSuccess }) => {
     username: "",
     email: "",
     password: "",
-    fullName: ""
+    fullName: "",
+    registrationPhrase: ""
   })
   const { register, error, loading } = useAuth()
 
@@ -25,7 +26,8 @@ const RegisterForm = ({ onSuccess }) => {
       username: formData.username,
       email: formData.email,
       password: formData.password,
-      full_name: formData.fullName || undefined
+      full_name: formData.fullName || undefined,
+      registration_phrase: formData.registrationPhrase
     }
     
     const success = await register(userData)
@@ -101,6 +103,22 @@ const RegisterForm = ({ onSuccess }) => {
             value={formData.fullName}
             onChange={handleChange}
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          />
+        </div>
+        
+        <div className="mb-6">
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="registrationPhrase">
+            Registration Phrase*
+          </label>
+          <input
+            id="registrationPhrase"
+            name="registrationPhrase"
+            type="text"
+            value={formData.registrationPhrase}
+            onChange={handleChange}
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            placeholder="Enter the required registration phrase"
+            required
           />
         </div>
         

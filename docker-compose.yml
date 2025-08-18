@@ -29,6 +29,7 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       - DATABASE_URL=postgresql://barbot:barbot_password@db:5432/barbot
+      - REGISTRATION_PHRASE=${REGISTRATION_PHRASE}
     ports:
       - "8001:8000"
     volumes:
