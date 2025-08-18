@@ -2,11 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import AuthPage from './components/auth/AuthPage';
 
-// Use a relative URL for API calls, which will be handled by our nginx proxy
-const API_URL = '/api/chat';
+// Use direct backend URL for API calls in development
+const API_URL = 'http://localhost:8001/chat';
 
-function App() {
+function ChatApp() {
+  const { user, logout } = useAuth();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -65,9 +68,20 @@ function App() {
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-indigo-600 text-white p-4 shadow-md">
-        <div className="container mx-auto">
-          <h1 className="text-2xl font-bold">Barbot</h1>
-          <p className="text-sm">Your virtual mixologist with 20+ years of experience</p>
+        <div className="container mx-auto flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Barbot</h1>
+            <p className="text-sm">Your virtual mixologist with 20+ years of experience</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm">Welcome, {user?.full_name || user?.username}</span>
+            <button
+              onClick={logout}
+              className="bg-indigo-500 hover:bg-indigo-400 px-3 py-1 rounded text-sm"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -126,4 +140,26 @@ function App() {
   );
 }
 
-export default App;
+function App() {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <ChatApp /> : <AuthPage onAuthSuccess={() => {}} />;
+}
+
+function AppWithAuth() {
+  return (
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  );
+}
+
+export default AppWithAuth;
