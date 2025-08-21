@@ -13,9 +13,15 @@ services:
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    networks:
+      - barbot-network
+
+    
 
   # Frontend web service in development mode
   web:
+    container_name: barbot
     build:
       context: ./web
       dockerfile: Dockerfile.dev
@@ -27,5 +33,32 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - HOST=0.0.0.0
       - PORT=3000
+      - DANGEROUSLY_DISABLE_HOST_CHECK=true
+      - REACT_APP_API_BASE_URL=
     ports:
       - "3000:3000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.barbot-dev.entrypoints=http"
+      - "traefik.http.routers.barbot-dev.rule=Host(`barbot-dev.krismitchell.dev`)"
+      - "traefik.http.middlewares.barbot-dev-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.barbot-dev.middlewares=barbot-dev-https-redirect"
+      - "traefik.http.routers.barbot-dev-secure.entrypoints=https"
+      - "traefik.http.routers.barbot-dev-secure.rule=Host(`barbot-dev.krismitchell.dev`)"
+      - "traefik.http.routers.barbot-dev-secure.tls=true"
+      - "traefik.http.routers.barbot-dev-secure.tls.certresolver=cloudflare"
+      - "traefik.http.routers.barbot-dev-secure.middlewares=tinyauth@docker"
+      - "traefik.http.routers.barbot-dev-secure.service=barbot-dev-secure@docker"
+      - "traefik.http.services.barbot-dev-secure.loadbalancer.server.port=3000"
+      - "traefik.http.services.barbot-dev-secure.loadbalancer.server.scheme=http"
+      - "traefik.docker.network=proxy"
+    networks:
+      - barbot-network
+      - proxy
+
+networks:
+  barbot-network:
+    driver: bridge
+  proxy:
+    external: true
