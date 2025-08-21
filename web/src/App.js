@@ -2,14 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import AuthPage from './components/auth/AuthPage';
 
-// Use direct backend URL for API calls in development
-const API_URL = 'http://localhost:8001/chat';
+// API base URL - use environment variable or default to localhost for development
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '';
+const API_URL = `${API_BASE_URL}/chat`;
 
-function ChatApp() {
-  const { user, logout } = useAuth();
+function App() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -74,13 +72,7 @@ function ChatApp() {
             <p className="text-sm">Your virtual mixologist with 20+ years of experience</p>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm">Welcome, {user?.full_name || user?.username}</span>
-            <button
-              onClick={logout}
-              className="bg-indigo-500 hover:bg-indigo-400 px-3 py-1 rounded text-sm"
-            >
-              Logout
-            </button>
+            <span className="text-sm">Welcome to Barbot!</span>
           </div>
         </div>
       </header>
@@ -140,26 +132,4 @@ function ChatApp() {
   );
 }
 
-function App() {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
-  }
-
-  return isAuthenticated ? <ChatApp /> : <AuthPage onAuthSuccess={() => {}} />;
-}
-
-function AppWithAuth() {
-  return (
-    <AuthProvider>
-      <App />
-    </AuthProvider>
-  );
-}
-
-export default AppWithAuth;
+export default App;

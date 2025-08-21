@@ -12,11 +12,7 @@ pytest-asyncio==0.25.0
 pytest-mock==3.14.0
 pytest-cov==6.0.0
 
-# Authentication
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-
-# Database
+# Database (kept for potential future use)
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.10
 alembic==1.14.0
