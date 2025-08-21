@@ -5,24 +5,15 @@ import uuid
 import logging
 from datetime import timedelta
 from typing import List, Dict, Any, Optional, Tuple, Set
-from fastapi import FastAPI, HTTPException, Depends, status, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import anthropic
 import structlog
 from sqlalchemy.orm import Session
 
-# Import authentication modules
-from auth import (
-    Token, UserResponse, UserCreate, authenticate_user, 
-    create_access_token, get_current_active_user,
-    ACCESS_TOKEN_EXPIRE_MINUTES, add_user, User,
-    create_admin_user
-)
-
-from database import get_db
+# Remove authentication imports - simplified version
 
 # Load environment variables
 load_dotenv()
@@ -195,55 +186,7 @@ def is_cocktail_related(message: str) -> Tuple[bool, str]:
     # If no keywords found, it's likely not cocktail-related
     return False, "I'm a mixologist specializing in cocktails and drinks. Please ask me questions related to mixology, cocktails, or drink recipes."
 
-# Authentication routes
-@app.post("/token", response_model=Token)
-async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
-    req: Request = None
-):
-    req_logger = getattr(req.state, 'logger', logger) if req else logger
-    req_logger.info("Login attempt", username=form_data.username)
-    
-    user = authenticate_user(db, form_data.username, form_data.password)
-    if not user:
-        req_logger.warning("Login failed - invalid credentials", username=form_data.username)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    req_logger.info("Login successful", user_id=user.id, username=user.username)
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-@app.post("/register", response_model=UserResponse)
-async def register_user(
-    user_data: UserCreate, 
-    db: Session = Depends(get_db),
-    req: Request = None
-):
-    req_logger = getattr(req.state, 'logger', logger) if req else logger
-    req_logger.info("User registration attempt", username=user_data.username, email=user_data.email)
-    
-    db_user = add_user(db, user_data)
-    if not db_user:
-        req_logger.warning("Registration failed - user already exists", username=user_data.username, email=user_data.email)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username or email already exists",
-        )
-    
-    req_logger.info("User registration successful", user_id=db_user.id, username=db_user.username)
-    return db_user
-
-@app.get("/users/me", response_model=UserResponse)
-async def read_users_me(current_user: User = Depends(get_current_active_user)):
-    return current_user
+# Authentication removed - direct access to chat
 
 # API endpoints
 @app.get("/")
@@ -253,11 +196,9 @@ async def root():
 @app.post("/chat", response_model=ChatResponse)
 async def chat(
     request: ChatRequest, 
-    current_user: User = Depends(get_current_active_user),
     req: Request = None
 ):
     req_logger = getattr(req.state, 'logger', logger) if req else logger
-    req_logger = req_logger.bind(user_id=current_user.id, username=current_user.username)
     
     req_logger.info("Chat request received", message_count=len(request.messages))
     
@@ -317,17 +258,11 @@ async def chat(
         req_logger.error("Chat request failed", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=str(e))
 
-# Startup event to initialize admin user
+# Simplified startup - no authentication setup needed
 @app.on_event("startup")
 async def startup_event():
-    logger.info("Application startup initiated")
-    try:
-        db = next(get_db())
-        create_admin_user(db)
-        logger.info("Application startup completed successfully")
-    except Exception as e:
-        logger.error("Application startup failed", error=str(e), error_type=type(e).__name__)
-        raise
+    logger.info("Application startup initiated - simplified version")
+    logger.info("Application startup completed successfully")
 
 if __name__ == "__main__":
     import uvicorn
